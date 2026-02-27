@@ -2,50 +2,69 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from contextlib import asynccontextmanager
-import webbrowser
 
 from src.api.oauth_callback import router as oauth_router
 
+
+# =====================================================
+# LIFESPAN (Railway-safe)
+# =====================================================
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 👇 Put your startup logic here
-    print("🔐 Opening browser for OAuth login:")
-    webbrowser.open("http://localhost:8000/google_oauth/")
-
+    print("🚀 Google OAuth MCP Server started successfully")
+    print("👉 Visit /google_oauth to begin authentication")
     yield
-
-    # 👇 (Optional) Put shutdown/cleanup logic here
     print("🛑 Server shutting down")
+
+
+# =====================================================
+# FASTAPI APP
+# =====================================================
 
 app = FastAPI(
     title="Google OAuth Server for MCP",
-    description="Google OAuth Server",
+    description="Google OAuth Proxy Server for Remote MCP Access",
     version="0.1.0",
     lifespan=lifespan
 )
 
-# Configure CORS
+
+# =====================================================
+# CORS CONFIG
+# =====================================================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # You can restrict later for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+
+# =====================================================
+# ROUTERS
+# =====================================================
+
 app.include_router(oauth_router)
+
+
+# =====================================================
+# ROOT ENDPOINT
+# =====================================================
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return """
     <html>
         <head>
-            <title>Google OAuth Server</title>
+            <title>Google OAuth MCP Server</title>
             <style>
                 body {
                     font-family: Arial, sans-serif;
                     display: flex;
+                    flex-direction: column;
                     justify-content: center;
                     align-items: center;
                     height: 100vh;
@@ -54,17 +73,32 @@ async def root():
                 }
                 h1 {
                     color: #333;
-                    text-align: center;
+                }
+                a {
+                    margin-top: 20px;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    background-color: #4285F4;
+                    color: white;
+                    border-radius: 5px;
+                }
+                a:hover {
+                    background-color: #3367D6;
                 }
             </style>
         </head>
         <body>
-            <h1>Welcome to Google OAuth Proxy Server. Go to /google_oauth</h1>
+            <h1>Google OAuth MCP Server</h1>
+            <a href="/google_oauth">Authenticate with Google</a>
         </body>
     </html>
     """
 
+
+# =====================================================
+# HEALTH CHECK
+# =====================================================
+
 @app.get("/health")
 async def health_check():
     return {"status": "OK"}
-
